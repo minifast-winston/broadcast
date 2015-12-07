@@ -1,7 +1,8 @@
 class Atom {
   constructor(data, listener) {
     this.data = data;
-    this.listener = listener;
+    this.listeners = [];
+    this.listen(listener);
   }
 
   deref() {
@@ -11,7 +12,11 @@ class Atom {
   replace(newData) {
     var oldData = this.data;
     this.data = newData;
-    this.listener(newData, oldData);
+    this.listeners.forEach(listener => listener(newData, oldData));
+  }
+
+  listen(listener) {
+    if (listener) this.listeners.push(listener);
   }
 }
 

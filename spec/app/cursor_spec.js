@@ -86,4 +86,28 @@ describe('Cursor', function() {
       });
     });
   });
+
+  describe('#listen', function() {
+    var listener, subCursor;
+
+    beforeEach(function() {
+      subCursor = cursor.select('taco');
+      listener = jasmine.createSpy("callback");
+      subCursor.listen(listener);
+    });
+
+    describe('when the data at the cursor context is updated', function(){
+      it('calls the listener with those values', function(){
+        subCursor.set('fish');
+        expect(listener).toHaveBeenCalledWith('fish', 'chicken');
+      });
+    });
+
+    describe('when the data at the cursor context is not substantially updated', function(){
+      it('does not call the listener', function(){
+        subCursor.set('chicken');
+        expect(listener).not.toHaveBeenCalled();
+      });
+    });
+  });
 });

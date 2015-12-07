@@ -1,9 +1,29 @@
 import updateReact from 'react-addons-update';
 
+class Watch {
+  constructor(path, listener) {
+    this.path = path;
+    this.listener = listener;
+  }
+
+  onData(newData, oldData) {
+    let newValue = this.path.reduce((memo, key) => memo[key], newData),
+        oldValue = this.path.reduce((memo, key) => memo[key], oldData);
+    if (newValue !== oldValue) {
+      this.listener.call(this, newValue, oldValue);
+    }
+  }
+}
+
 class Cursor {
   constructor(atom, path = []) {
     this.atom = atom;
     this.path = path;
+  }
+
+  listen(listener) {
+    let watch = new Watch(this.path, listener);
+    this.atom.listen(watch.onData.bind(watch));
   }
 
   get(...keys) {

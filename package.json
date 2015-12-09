@@ -21,6 +21,7 @@
     "file-loader": "0.8.5",
     "jasmine-es6": "0.0.18",
     "jsdomify": "^1.0.2",
+    "mock-promises": "^0.6.0",
     "react-addons-test-utils": "0.14.3",
     "react-hot-loader": "^1.3.0",
     "webpack": "1.12.9",

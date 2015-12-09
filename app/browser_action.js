@@ -5,16 +5,18 @@ import ReactDOM from 'react-dom';
 import BackgroundContext from './background_context';
 
 const PauseButton = ({cursor}) => {
-  let $paused = cursor.select('paused');
-  return(<button onClick={() => $paused.apply(paused => !paused)}>
-    {$paused.get() ? 'Play' : 'Pause'}
+  let $capturing = cursor.select('capturing'),
+      $requested = cursor.select('requested');
+  if (!$requested.get()) { return(<div></div>); }
+  return(<button onClick={() => $capturing.apply(capturing => !capturing)}>
+    {$capturing.get() ? 'Pause' : 'Resume'}
   </button>);
 }
 
 const StartButton = ({cursor}) => {
-  let $started = cursor.select('started');
-  return(<button onClick={() => $started.apply(started => !started)}>
-    {$started.get() ? 'Stop' : 'Start'}
+  let $requested = cursor.select('requested');
+  return(<button onClick={() => $requested.apply(requested => !requested)}>
+    {$requested.get() ? 'Stop' : 'Capture'}
   </button>);
 }
 
@@ -29,17 +31,9 @@ const Counter = ({cursor}) => {
   </div>);
 }
 
-const CaptureStatus = ({cursor}) => {
-  let $loaded = cursor.select('loaded');
-  return (<div>
-    Capture: {$loaded.get() ? 'loaded' : 'waiting'}
-  </div>);
-}
-
 if (typeof document !== 'undefined') {
   ReactDOM.render(
     <BackgroundContext>
-      <CaptureStatus />
       <Counter />
       <PauseButton />
       <StartButton />

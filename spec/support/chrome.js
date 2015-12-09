@@ -1,12 +1,15 @@
 global.backgroundPage = {};
 
 global.chrome = {
-  extension: {
-    getBackgroundPage: function(){
-      return global.backgroundPage;
+  desktopCapture: {
+    chooseDesktopMedia: function(media, callback) {
+      callback("id");
     }
   },
   runtime: {
+    getBackgroundPage: function(callback){
+      callback(global.backgroundPage);
+    },
     listeners: [],
     onMessage: {
       addListener: function(listener){

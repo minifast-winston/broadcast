@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "manifest_version": 2,
   "background": {
-    "scripts": ["background.bundle.js"],
+    "page": "background.html",
     "persistent": false
   },
   "permissions": ["desktopCapture"],

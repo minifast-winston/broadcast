@@ -27,11 +27,13 @@ module.exports = {
   },
 
   entry: {
+    manifest: "./manifest.json",
+
     background: "./background.js",
+    background_page: "./background.html",
+
     browser_action: "./browser_action.js",
-    ticker: "./ticker.js",
-    html: "./browser_action.html",
-    manifest: "./manifest.json"
+    browser_action_page: "./browser_action.html"
   },
 
   output: {

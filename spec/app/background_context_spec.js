@@ -16,7 +16,7 @@ describe('BackgroundContext', function() {
     ReactDOM = require('react-dom');
 
     data = {tacos: 'pescado'};
-    backgroundPage = {background: {getState: function(){ return data }}};
+    backgroundPage = {atom: {deref: function() { return data; }}};
   });
 
   afterEach(function(){

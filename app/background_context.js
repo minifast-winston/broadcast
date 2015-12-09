@@ -10,11 +10,12 @@ const BackgroundContext = React.createClass({
   },
 
   getInitialState: function() {
-    return chrome.extension.getBackgroundPage().background.getState();
+    return {};
   },
 
   componentDidMount: function() {
     chrome.runtime.onMessage.addListener(this.onMessage);
+    chrome.runtime.getBackgroundPage(page => this.setState(page.atom.deref()));
   },
 
   componentWillUnmount: function(){

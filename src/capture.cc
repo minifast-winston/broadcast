@@ -1,5 +1,4 @@
 #include <math.h>
-
 #include <deque>
 
 #include "ppapi/cpp/instance.h"
@@ -13,184 +12,9 @@
 #include "ppapi/cpp/video_encoder.h"
 #include "ppapi/cpp/video_frame.h"
 
-#define fourcc(a, b, c, d)                                               \
-  (((uint32_t)(a) << 0) | ((uint32_t)(b) << 8) | ((uint32_t)(c) << 16) | \
-   ((uint32_t)(d) << 24))
-
-// IVF container writer. It is possible to parse H264 bitstream using
-// NAL units but for VP8 we need a container to at least find encoded
-// pictures as well as the picture sizes.
-class IVFWriter {
- public:
-  IVFWriter() {}
-  ~IVFWriter() {}
-
-  uint32_t GetFileHeaderSize() const { return 32; }
-  uint32_t GetFrameHeaderSize() const { return 12; }
-  uint32_t WriteFileHeader(uint8_t* mem,
-                           const std::string& codec,
-                           int32_t width,
-                           int32_t height);
-  uint32_t WriteFrameHeader(uint8_t* mem, uint64_t pts, size_t frame_size);
-
- private:
-  void PutLE16(uint8_t* mem, int val) const {
-    mem[0] = (val >> 0) & 0xff;
-    mem[1] = (val >> 8) & 0xff;
-  }
-  void PutLE32(uint8_t* mem, int val) const {
-    mem[0] = (val >> 0) & 0xff;
-    mem[1] = (val >> 8) & 0xff;
-    mem[2] = (val >> 16) & 0xff;
-    mem[3] = (val >> 24) & 0xff;
-  }
-};
-
-uint32_t IVFWriter::WriteFileHeader(uint8_t* mem,
-                                    const std::string& codec,
-                                    int32_t width,
-                                    int32_t height) {
-  mem[0] = 'D';
-  mem[1] = 'K';
-  mem[2] = 'I';
-  mem[3] = 'F';
-  PutLE16(mem + 4, 0);                               // version
-  PutLE16(mem + 6, 32);                              // header size
-  PutLE32(mem + 8, fourcc(codec[0], codec[1], codec[2], '0'));  // fourcc
-  PutLE16(mem + 12, static_cast<uint16_t>(width));   // width
-  PutLE16(mem + 14, static_cast<uint16_t>(height));  // height
-  PutLE32(mem + 16, 1000);                           // rate
-  PutLE32(mem + 20, 1);                              // scale
-  PutLE32(mem + 24, 0xffffffff);                     // length
-  PutLE32(mem + 28, 0);                              // unused
-
-  return 32;
-}
-
-uint32_t IVFWriter::WriteFrameHeader(uint8_t* mem,
-                                     uint64_t pts,
-                                     size_t frame_size) {
-  PutLE32(mem, (int)frame_size);
-  PutLE32(mem + 4, (int)(pts & 0xFFFFFFFF));
-  PutLE32(mem + 8, (int)(pts >> 32));
-
-  return 12;
-}
-
-class RemoteControlObserver {
-public:
-  virtual void OnEncodingChange(bool encoding) {};
-  virtual void OnPausedChange(bool paused) {};
-};
-
-class RemoteControl {
-  bool encoding_;
-  bool paused_;
-  std::vector<RemoteControlObserver*> views_;
-public:
-  explicit RemoteControl(): encoding_(false), paused_(true) {}
-
-  void OnChange(RemoteControlObserver *observer) {
-    views_.push_back(observer);
-  }
-
-  void SetEncoding(bool encoding) {
-    encoding_ = encoding;
-    NotifyEncoding();
-  }
-
-  void SetPaused(bool paused) {
-    paused_ = paused;
-    NotifyPaused();
-  }
-
-  void NotifyEncoding() {
-    for (int i = 0; i < views_.size(); ++i) {
-      views_[i]->OnEncodingChange(encoding_);
-    }
-  }
-
-  void NotifyPaused() {
-    for (int i = 0; i < views_.size(); ++i) {
-      views_[i]->OnPausedChange(paused_);
-    }
-  }
-
-  bool IsRunning() {
-    return encoding_ && !paused_;
-  }
-};
-
-class FrameObserver {
-public:
-  virtual void OnFrameTick(int32_t frame) {};
-};
-
-class FrameAdvancer: public RemoteControlObserver {
-  bool encoding_;
-  bool paused_;
-  int32_t frame_;
-  uint32_t fps_;
-  PP_Time last_frame_at_;
-  pp::CompletionCallbackFactory<FrameAdvancer> callback_factory_;
-  std::vector<FrameObserver*> views_;
-
-public:
-  explicit FrameAdvancer(uint32_t fps): callback_factory_(this),
-                                        last_frame_at_(0),
-                                        frame_(0),
-                                        encoding_(false),
-                                        paused_(true) {
-    fps_ = fps;
-  }
-
-  void SetRemote(RemoteControl *remote) {
-    remote->OnChange(this);
-  }
-
-  void OnFrameTick(FrameObserver *observer) {
-    views_.push_back(observer);
-  }
-
-  void OnEncodingChange(bool encoding) {
-    encoding_ = encoding;
-    ScheduleNextFrame();
-  }
-
-  void OnPausedChange(bool paused) {
-    paused_ = paused;
-    ScheduleNextFrame();
-  }
-
-  double clamp(double min, double max, double value) {
-    return std::max(std::min(value, max), min);
-  }
-
-  void ScheduleNextFrame() {
-    PP_Time now = pp::Module::Get()->core()->GetTime();
-    PP_Time duration = 1.0 / fps_;
-    PP_Time delta = duration - clamp(0, duration, now - last_frame_at_ - duration);
-
-    if (encoding_ && !paused_) {
-      pp::Module::Get()->core()->CallOnMainThread(
-          delta * 1000,
-          callback_factory_.NewCallback(&FrameAdvancer::NextFrame),
-          0);
-
-      last_frame_at_ = pp::Module::Get()->core()->GetTime();
-    }
-  }
-
-  void NextFrame(int32_t result) {
-    if (encoding_ && !paused_) {
-      frame_++;
-      for (int i = 0; i < views_.size(); ++i) {
-        views_[i]->OnFrameTick(frame_);
-      }
-      ScheduleNextFrame();
-    }
-  }
-};
+#include "ivf_writer.h"
+#include "remote_control.h"
+#include "frame_advancer.h"
 
 class CaptureInstance : public pp::Instance,
                         public FrameObserver {
@@ -334,13 +158,6 @@ public:
   void OnFrameTick(int32_t currentFrame) {
     video_track_.GetFrame(callback_factory_.NewCallbackWithOutput(
         &CaptureInstance::OnTrackFrame));
-  }
-
-  void PostLog(pp::Var message) {
-    pp::VarDictionary dictionary;
-    dictionary.Set(pp::Var("name"), pp::Var("log"));
-    dictionary.Set(pp::Var("data"), message);
-    PostMessage(dictionary);
   }
 
   virtual void HandleMessage(const pp::Var& var_message) {

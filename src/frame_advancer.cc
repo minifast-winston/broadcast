@@ -7,17 +7,17 @@ void FrameAdvancer::SetRemote(RemoteControl *remote) {
 }
 
 void FrameAdvancer::OnFrameTick(FrameObserver *observer) {
-  views_.push_back(observer);
+  listeners_.push_back(observer);
 }
 
 void FrameAdvancer::OnEncodingChange(bool encoding) {
   encoding_ = encoding;
-  ScheduleNextFrame(0);
+  ScheduleTick(0);
 }
 
 void FrameAdvancer::OnPausedChange(bool paused) {
   paused_ = paused;
-  ScheduleNextFrame(0);
+  ScheduleTick(0);
 }
 
 PP_Time FrameAdvancer::GetNextFrameTime() {
@@ -28,20 +28,23 @@ PP_Time FrameAdvancer::GetNextFrameTime() {
   return (until_next_frame - delta) * 1000;
 }
 
-void FrameAdvancer::ScheduleNextFrame(int32_t result) {
+void FrameAdvancer::ScheduleTick(int32_t result) {
   if (encoding_ && !paused_) {
-    pp::Module::Get()->core()->CallOnMainThread(
-        GetNextFrameTime(),
-        callback_factory_.NewCallback(&FrameAdvancer::ScheduleNextFrame),
-        0);
-    NextFrame();
-    last_frame_at_ = core_->GetTime();
+    Tick();
+    Delay(
+      callback_factory_.NewCallback(&FrameAdvancer::ScheduleTick),
+      GetNextFrameTime());
   }
+  last_frame_at_ = core_->GetTime();
 }
 
-void FrameAdvancer::NextFrame() {
+void FrameAdvancer::Delay(pp::CompletionCallback callback, PP_Time delay) {
+  pp::Module::Get()->core()->CallOnMainThread(delay, callback, 0);
+}
+
+void FrameAdvancer::Tick() {
   frame_++;
-  for (int i = 0; i < views_.size(); ++i) {
-    views_[i]->OnFrameTick(frame_);
+  for (auto &listener : listeners_) {
+    listener->OnFrameTick(frame_);
   }
 }

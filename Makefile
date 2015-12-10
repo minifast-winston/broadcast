@@ -16,8 +16,8 @@ THIS_MAKEFILE := $(abspath $(lastword $(MAKEFILE_LIST)))
 NACL_SDK_ROOT ?= $(abspath $(dir $(THIS_MAKEFILE))../nacl_sdk/pepper_46)
 
 # Project Build flags
-WARNINGS := -Wno-long-long -Wall -Wswitch-enum -pedantic -Werror
-CXXFLAGS := -pthread -std=gnu++98 $(WARNINGS)
+WARNINGS := -Wno-c++11-extensions -Wno-long-long -Wall -Wswitch-enum -pedantic -Werror
+CXXFLAGS := -pthread -std=gnu++11 $(WARNINGS)
 
 #
 # Compute tool paths

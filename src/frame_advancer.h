@@ -17,7 +17,7 @@ class FrameAdvancer: public RemoteControlObserver {
   PP_Time last_frame_at_;
   pp::CompletionCallbackFactory<FrameAdvancer> callback_factory_;
 
-  std::vector<FrameObserver*> views_;
+  std::vector<FrameObserver*> listeners_;
 
 public:
   FrameAdvancer(uint32_t fps, PPB_Core* core):
@@ -44,6 +44,7 @@ public:
   void OnEncodingChange(bool encoding);
   void OnPausedChange(bool paused);
   PP_Time GetNextFrameTime();
-  void ScheduleNextFrame(int32_t result);
-  void NextFrame();
+  void ScheduleTick(int32_t result);
+  virtual void Delay(pp::CompletionCallback callback, PP_Time delay);
+  void Tick();
 };

@@ -41,9 +41,11 @@ public:
 
   void SetRemote(RemoteControl *remote);
   void OnFrameTick(FrameObserver *observer);
+  void ClearListeners();
+
   void OnEncodingChange(bool encoding);
   void OnPausedChange(bool paused);
-  PP_Time GetNextFrameTime();
+  PP_Time GetFrameDelay();
   void ScheduleTick(int32_t result);
   virtual void Delay(pp::CompletionCallback callback, PP_Time delay);
   void Tick();

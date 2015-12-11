@@ -12,10 +12,11 @@ public:
 class RemoteControl {
   bool encoding_;
   bool paused_;
-  std::vector<RemoteControlObserver*> views_;
+  std::vector<RemoteControlObserver*> listeners_;
 public:
   explicit RemoteControl(): encoding_(false), paused_(true) {}
   void OnChange(RemoteControlObserver *observer);
+  void ClearListeners();
 
   void SetEncoding(bool encoding);
   void SetPaused(bool paused);

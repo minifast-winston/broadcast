@@ -13,6 +13,9 @@
 #include "remote_control.h"
 #include "frame_advancer.h"
 
+#include "helpers/timecop.h"
+#include "helpers/doubles.h"
+
 #if defined(WIN32)
 #include <Windows.h>
 #undef PostMessage
@@ -92,47 +95,77 @@ TEST(RemoteControl, IsRunning) {
   EXPECT_EQ(control.IsRunning(), true);
 }
 
-class TestListener: public RemoteControlObserver {
-  bool called_;
-  bool value_;
-public:
-  TestListener(): called_(false) {}
-  ~TestListener() {}
-  bool GetCalled() { return called_; }
-  bool GetValue() { return value_; }
-
-  void OnEncodingChange(bool encoding) { called_ = true; value_ = encoding; };
-  void OnPausedChange(bool paused) { called_ = true; value_ = paused; };
-};
-
 TEST(RemoteControl, OnChangePaused) {
-  TestListener listener = TestListener();
+  TestRemoteControlListener pause_listener = TestRemoteControlListener();
   RemoteControl control = RemoteControl();
-  control.OnChange(&listener);
+  control.OnChange(&pause_listener);
   control.SetPaused(false);
-  EXPECT_EQ(listener.GetCalled(), true);
+  EXPECT_EQ(pause_listener.GetCalled(), true);
+  EXPECT_EQ(pause_listener.GetValue(), false);
+  control.SetEncoding(true);
+  EXPECT_EQ(pause_listener.GetValue(), true);
+  control.ClearListeners();
 }
 
-TEST(RemoteControl, OnChangeEncoding) {
-  TestListener listener = TestListener();
-  RemoteControl control = RemoteControl();
-  control.OnChange(&listener);
-  control.SetEncoding(false);
-  EXPECT_EQ(listener.GetCalled(), true);
+TEST(Timecop, GetTime) {
+  Timecop::ResetTime();
+  EXPECT_EQ(Timecop::GetTime(), 0.0);
+  Timecop::AdvanceTime(0.1);
+  EXPECT_EQ(Timecop::GetTime(), 0.1);
+  Timecop::AdvanceTime(0.1);
+  EXPECT_EQ(Timecop::GetTime(), 0.2);
+  Timecop::RewindTime(0.1);
+  EXPECT_EQ(Timecop::GetTime(), 0.1);
+  Timecop::ResetTime();
+  EXPECT_EQ(Timecop::GetTime(), 0.0);
 }
 
-PP_Time Timecop() {
-  return 0.0;
-}
-
-TEST(FrameAdvancer, GetNextFrameTime) {
+TEST(FrameAdvancer, GetFrameDelay) {
   PPB_Core core;
-  core.GetTime = Timecop;
-  FrameAdvancer advancer(25, &core);
-  EXPECT_EQ(advancer.GetNextFrameTime(), 40);
+  core.GetTime = &Timecop::GetTime;
+  MockFrameAdvancer advancer(1, &core);
+  EXPECT_EQ(advancer.GetFrameDelay(), 1);
+  Timecop::AdvanceTime(0.1);
+  EXPECT_EQ(advancer.GetFrameDelay(), 0.9);
+  Timecop::ResetTime();
+  advancer.ClearListeners();
 }
 
+TEST(FrameAdvancer, Tick) {
+  PPB_Core core;
+  core.GetTime = &Timecop::GetTime;
+  MockFrameAdvancer advancer(1, &core);
+  TestFrameAdvancerListener frame_listener = TestFrameAdvancerListener();
+  advancer.OnFrameTick(&frame_listener);
+  advancer.Tick();
+  EXPECT_EQ(frame_listener.GetValue(), 1);
+  Timecop::ResetTime();
+  advancer.ClearListeners();
+}
 
+TEST(FrameAdvancer, ScheduleTick) {
+  PPB_Core core;
+  core.GetTime = &Timecop::GetTime;
+  MockFrameAdvancer advancer(1, &core);
+  TestFrameAdvancerListener frame_listener = TestFrameAdvancerListener();
+  advancer.OnFrameTick(&frame_listener);
+
+  advancer.OnEncodingChange(true);     // user configures the video
+  Timecop::AdvanceTime(15.5);          // time passes in UI land
+
+  advancer.OnPausedChange(false);      // user starts capturing
+  EXPECT_EQ(frame_listener.GetValue(), 1); // callback gets the first frame
+  EXPECT_EQ(advancer.GetDelay(), 0);   // next frame is captured immediately
+  Timecop::AdvanceTime(advancer.GetDelay()); // system waits the specified amount of time
+
+  Timecop::AdvanceTime(0.1); // frame capturing and encoding happens
+
+  advancer.ScheduleTick(PP_OK);
+  EXPECT_EQ(frame_listener.GetValue(), 2); // callback gets the second frame
+
+  Timecop::ResetTime();
+  advancer.ClearListeners();
+}
 
 class GTestEventListener : public ::testing::EmptyTestEventListener {
  public:

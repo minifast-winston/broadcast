@@ -24,13 +24,12 @@ class Background {
   }
 }
 
-let background = new Background(window.atom);
-background.listen();
-
 window.atom = new Atom({
   frames: [],
   capturing: false,
-  requested: false
+  requested: false,
+  size: 0
 });
 
+new Background(window.atom).listen();
 new Capturer(window.atom, document.getElementById('capture')).listen();

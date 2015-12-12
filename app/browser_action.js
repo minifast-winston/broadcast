@@ -31,9 +31,18 @@ const Counter = ({cursor}) => {
   </div>);
 }
 
+const Size = ({cursor}) => {
+  let bytes = cursor.get('size');
+  let magnitude = Math.max(0, Math.floor(Math.log(bytes) / Math.log(1024)));
+  let units = ["B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"][magnitude];
+  let size = bytes / Math.pow(1024, magnitude);
+  return (<div>Size: {Math.floor(size * 100) / 100} {units}</div>);
+}
+
 if (typeof document !== 'undefined') {
   ReactDOM.render(
     <BackgroundContext>
+      <Size />
       <Counter />
       <PauseButton />
       <StartButton />

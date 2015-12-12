@@ -8,18 +8,33 @@ class Capturer {
     this.$frames = new Cursor(atom).select('frames');
     this.$capturing = new Cursor(atom).select('capturing');
     this.$requested = new Cursor(atom).select('requested');
+    this.$size = new Cursor(atom).select('size');
     this.capture = capture;
+    this.buffer = new ArrayBuffer(0);
   }
 
-  // listen() {
-  //   this.capture.addEventListener('message', e => this.onCaptureMessage(e));
-  //   this.$capturing.listen(on => on ? this.onResume() : this.onPause());
-  //   this.$requested.listen(on => on ? this.onCapture() : this.onEnd());
-  //   this.$video.listen(this.onVideoStream.bind(this));
-  // }
+  push(buffer) {
+    let tmp = new Uint8Array(this.buffer.byteLength + buffer.byteLength);
+    tmp.set(new Uint8Array(this.buffer), 0);
+    tmp.set(new Uint8Array(buffer), this.buffer.byteLength);
+    this.reset(tmp.buffer);
+  }
+
+  reset(buffer) {
+    this.buffer = buffer;
+    this.$size.set(this.buffer.byteLength);
+  }
+
+  listen() {
+    this.capture.addEventListener('message', e => this.onCaptureMessage(e));
+    this.$capturing.listen(on => on ? this.onResume() : this.onPause());
+    this.$requested.listen(on => on ? this.onCapture() : this.onEnd());
+    this.$video.listen(this.onVideoStream.bind(this));
+  }
 
   onCaptureMessage({data}) {
     if (data.name == 'frame') {
+      this.push(data.data);
       this.$frames.push(data.timestamp)
     }
   }
@@ -41,6 +56,8 @@ class Capturer {
   onEnd() {
     this.$capturing.set(false);
     this.$video.set(null);
+    this.$frames.set([]);
+    this.reset(new ArrayBuffer(0));
   }
 
   onVideoStream(stream, oldStream) {
@@ -53,7 +70,7 @@ class Capturer {
 
   onVideoStreamStop(stream) {
     this.capture.postMessage({command: "stop"});
-    stream.getVideoTracks()[0].end();
+    stream.getVideoTracks()[0].stop();
     this.$requested.set(false);
   }
 

@@ -25,8 +25,13 @@ describe('Capturer', function() {
   describe('#onCaptureMessage', function() {
     describe('when the message is a frame', function() {
       it('adds the timestamp', function() {
-        capturer.onCaptureMessage({data: {name: 'frame', timestamp: 0}});
+        capturer.onCaptureMessage({data: {name: 'frame', timestamp: 0, data: {byteLength: 0}}});
         expect(atom.deref().frames).toEqual([0]);
+      });
+
+      it('adds the data', function() {
+        capturer.onCaptureMessage({data: {name: 'frame', timestamp: 0, data: {byteLength: 1}}});
+        expect(atom.deref().size).toEqual(1);
       });
     });
 
@@ -47,6 +52,7 @@ describe('Capturer', function() {
 
   describe('#onEnd', function() {
     beforeEach(function() {
+      atom = new Atom({requested: true, capturing: true, frames: [1], size: 123});
       internalAtom = new Atom({video: 'action_films'});
       capturer = new Capturer(atom, captureDom, internalAtom);
     });
@@ -59,6 +65,16 @@ describe('Capturer', function() {
     it('unsets the video stream', function() {
       capturer.onEnd();
       expect(internalAtom.deref().video).toBe(null);
+    });
+
+    it('empties out the frames', function() {
+      capturer.onEnd();
+      expect(atom.deref().frames).toEqual([]);
+    });
+
+    it('resets the size', function() {
+      capturer.onEnd();
+      expect(atom.deref().size).toEqual(0);
     });
   });
 
@@ -100,7 +116,7 @@ describe('Capturer', function() {
     var track, video;
 
     beforeEach(function() {
-      track = {end: jasmine.createSpy('stop')};
+      track = {stop: jasmine.createSpy('stop')};
       video = {
         addEventListener: jasmine.createSpy('addEventListener'),
         getVideoTracks: function(){ return [track]; }
@@ -124,7 +140,7 @@ describe('Capturer', function() {
 
       it("stops the track", function(){
         capturer.onVideoStream(video, oldVideo);
-        expect(track.end).toHaveBeenCalled();
+        expect(track.stop).toHaveBeenCalled();
       });
 
       it("un-requests the video", function(){

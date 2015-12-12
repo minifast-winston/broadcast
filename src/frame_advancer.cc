@@ -15,43 +15,45 @@ void FrameAdvancer::ClearListeners() {
 }
 
 void FrameAdvancer::OnEncodingChange(bool encoding) {
-  encoding_ = encoding;
-  ScheduleTick(PP_OK);
+  if (encoding != encoding_) {
+    encoding_ = encoding;
+    ScheduleTick(PP_OK, core_->GetTime(), 1);
+  }
 }
 
 void FrameAdvancer::OnPausedChange(bool paused) {
-  paused_ = paused;
-  ScheduleTick(PP_OK);
+  if (paused != paused_) {
+    paused_ = paused;
+    ScheduleTick(PP_OK, core_->GetTime(), 1);
+  }
 }
 
-PP_Time FrameAdvancer::GetFrameDelay() {
-  PP_Time now = core_->GetTime();
-  PP_Time then = last_frame_at_;
+PP_Time FrameAdvancer::GetFrameDelay(PP_Time now, PP_Time back_then, int32_t frames) {
   PP_Time tick = 1.0 / fps_;
-  PP_Time scheduled = then + tick;
-  PP_Time delay = std::max(std::min(scheduled - now, tick), 0.0);
+  PP_Time next = back_then + (tick * frames);
+  PP_Time delay = std::max(std::min(next - now, tick), 0.0);
   return delay;
 }
 
-void FrameAdvancer::ScheduleTick(int32_t result) {
+void FrameAdvancer::ScheduleTick(int32_t result, PP_Time back_then, int32_t frames) {
+  PP_Time now;
   if (result != PP_OK) { return; }
   if (encoding_ && !paused_) {
-    Tick();
+    Tick(frames);
+    now = core_->GetTime();
     Delay(
-      callback_factory_.NewCallback(&FrameAdvancer::ScheduleTick),
-      GetFrameDelay() * 1000);
+      GetFrameDelay(now, back_then, frames),
+      callback_factory_.NewCallback(&FrameAdvancer::ScheduleTick, back_then, frames + 1));
   }
-  last_frame_at_ = core_->GetTime();
 }
 
-void FrameAdvancer::Tick() {
+void FrameAdvancer::Tick(int32_t frames) {
   std::vector<FrameObserver*>::iterator it;
-  frame_++;
   for (it = listeners_.begin(); it != listeners_.end(); ++it) {
-    (*it)->OnFrameTick(frame_);
+    (*it)->OnFrameTick(frames);
   }
 }
 
-void FrameAdvancer::Delay(pp::CompletionCallback callback, PP_Time delay) {
-  pp::Module::Get()->core()->CallOnMainThread(delay, callback, 0);
+void FrameAdvancer::Delay(PP_Time delay, pp::CompletionCallback callback) {
+  pp::Module::Get()->core()->CallOnMainThread(delay * 1000, callback, 0);
 }

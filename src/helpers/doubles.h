@@ -26,6 +26,7 @@ class MockFrameAdvancer: public FrameAdvancer {
   pp::CompletionCallback callback_;
 public:
   MockFrameAdvancer(uint32_t fps, PPB_Core* core): FrameAdvancer(fps, core) {};
+  ~MockFrameAdvancer() {}
   PP_Time GetDelay() { return delay_; }
-  void Delay(pp::CompletionCallback callback, PP_Time delay) { delay_ = delay; }
+  void Delay(PP_Time delay, pp::CompletionCallback callback) { delay_ = delay; }
 };

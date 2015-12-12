@@ -20,7 +20,7 @@ void RemoteControl::SetPaused(bool paused) {
   std::vector<RemoteControlObserver*>::iterator it;
   paused_ = paused;
   for (it = listeners_.begin(); it != listeners_.end(); ++it) {
-    (*it)->OnPausedChange(encoding_);
+    (*it)->OnPausedChange(paused_);
   }
 }
 

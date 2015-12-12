@@ -68,10 +68,20 @@ clean: clean_test
 	$(RM) $(abspath $(dir $(THIS_MAKEFILE))/build/capture.bc)
 
 $(abspath $(dir $(THIS_MAKEFILE))/build/capture.bc): $(abspath $(dir $(THIS_MAKEFILE))/src/capture.cc)
-	$(PNACL_CXX) -o $@ $(abspath $(dir $(THIS_MAKEFILE))/src/ivf_writer.cc) $(abspath $(dir $(THIS_MAKEFILE))/src/remote_control.cc) $(abspath $(dir $(THIS_MAKEFILE))/src/frame_advancer.cc) $< -O2 $(CXXFLAGS) -L$(NACL_SDK_ROOT)/lib/pnacl/Release $(LDFLAGS)
+	$(PNACL_CXX) -o $@ \
+		$(abspath $(dir $(THIS_MAKEFILE))/src/ivf_writer.cc) \
+		$(abspath $(dir $(THIS_MAKEFILE))/src/remote_control.cc) \
+		$(abspath $(dir $(THIS_MAKEFILE))/src/frame_advancer.cc) \
+		$(abspath $(dir $(THIS_MAKEFILE))/src/configurer.cc) \
+		$< -O2 $(CXXFLAGS) -L$(NACL_SDK_ROOT)/lib/pnacl/Release $(LDFLAGS)
 
 $(abspath $(dir $(THIS_MAKEFILE))/build/capture_suite.bc): $(abspath $(dir $(THIS_MAKEFILE))/src/capture_suite.cc)
-	$(PNACL_CXX) -o $@ $(abspath $(dir $(THIS_MAKEFILE))/src/ivf_writer.cc) $(abspath $(dir $(THIS_MAKEFILE))/src/remote_control.cc) $(abspath $(dir $(THIS_MAKEFILE))/src/frame_advancer.cc) $< -Os $(CXXFLAGS) -L$(NACL_SDK_ROOT)/lib/pnacl/Release $(TEST_LDFLAGS)
+	$(PNACL_CXX) -o $@ \
+		$(abspath $(dir $(THIS_MAKEFILE))/src/ivf_writer.cc) \
+		$(abspath $(dir $(THIS_MAKEFILE))/src/remote_control.cc) \
+		$(abspath $(dir $(THIS_MAKEFILE))/src/frame_advancer.cc) \
+		$(abspath $(dir $(THIS_MAKEFILE))/src/configurer.cc) \
+		$< -Os $(CXXFLAGS) -L$(NACL_SDK_ROOT)/lib/pnacl/Release $(TEST_LDFLAGS)
 
 $(abspath $(dir $(THIS_MAKEFILE))/dist/capture.pexe): $(abspath $(dir $(THIS_MAKEFILE))/build/capture.bc)
 	$(PNACL_FINALIZE) -o $@ $<

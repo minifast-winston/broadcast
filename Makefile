@@ -40,17 +40,22 @@ LDFLAGS := -lppapi_cpp -lppapi
 TEST_LDFLAGS := -lppapi_simple_cpp $(LDFLAGS) -lnacl_io -lgtest
 EXEC_FLAGS := -B $(PNACL_TOOLS_PATH)/irt_core_x86_64.nexe
 
-SOURCES=$(wildcard src/*.cc)
-TEST_SOURCES=$(wildcard src/test/*.cc)
+MANIFEST = src/capture/capture.nmf
 
-OBJECTS=$(SOURCES:.cc=.o)
-TEST_OBJECTS=$(TEST_SOURCES:.cc=.o)
+SOURCES = $(wildcard src/*.cc)
+TEST_SOURCES = $(wildcard src/test/*.cc)
 
-INTERMEDIATE=build/capture.bc
-TEST_INTERMEDIATE=build/capture_suite.bc
+OBJECTS = $(SOURCES:.cc=.o)
+TEST_OBJECTS = $(TEST_SOURCES:.cc=.o)
 
-EXECUTABLE=$(INTERMEDIATE:.bc=.pexe)
-TEST_EXECUTABLE=$(TEST_INTERMEDIATE:.bc=.nexe)
+INTERMEDIATE = build/capture.bc
+TEST_INTERMEDIATE = build/capture_suite.bc
+
+EXECUTABLE = $(INTERMEDIATE:.bc=.pexe)
+TEST_EXECUTABLE = $(TEST_INTERMEDIATE:.bc=.nexe)
+
+FINAL_MANIFEST = $(patsubst src/capture/%, dist/%, $(MANIFEST))
+FINAL_EXECUTABLE = $(patsubst build/%, dist/%, $(EXECUTABLE))
 
 #
 # Disable DOS PATH warning when using Cygwin based tools Windows
@@ -58,8 +63,14 @@ TEST_EXECUTABLE=$(TEST_INTERMEDIATE:.bc=.nexe)
 CYGWIN ?= nodosfilewarning
 export CYGWIN
 
-all: $(EXECUTABLE) dist/capture.nmf
-	$(CP) $< $(patsubst build/%, dist/%, $<)
+.PHONY: all
+all: $(FINAL_EXECUTABLE) $(FINAL_MANIFEST)
+
+$(FINAL_EXECUTABLE): $(EXECUTABLE)
+	$(CP) $< $@
+
+$(FINAL_MANIFEST):
+	$(CP) $(MANIFEST) $@
 
 test: $(TEST_EXECUTABLE)
 	$(PNACL_TOOLS_PATH)/sel_ldr_x86_64 $(EXEC_FLAGS) $(TEST_EXECUTABLE)
@@ -79,9 +90,6 @@ $(TEST_INTERMEDIATE): $(OBJECTS) $(TEST_OBJECTS)
 %.nexe: %.pexe
 	$(PNACL_TRANSLATE) -o $@ -arch $(NATIVE_ARCH) $<
 
-dist/capture.nmf:
-	$(CP) src/capture.nmf $@
-
 clean_test:
 	$(RM) $(TEST_OBJECTS)
 	$(RM) $(TEST_INTERMEDIATE)
@@ -92,5 +100,5 @@ clean: clean_test
 	$(RM) $(OBJECTS)
 	$(RM) $(INTERMEDIATE)
 	$(RM) $(EXECUTABLE)
-	$(RM) dist/capture.nmf
-
+	$(RM) $(FINAL_EXECUTABLE)
+	$(RM) $(FINAL_MANIFEST)

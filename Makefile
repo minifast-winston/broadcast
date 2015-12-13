@@ -42,11 +42,15 @@ EXEC_FLAGS := -B $(PNACL_TOOLS_PATH)/irt_core_x86_64.nexe
 
 MANIFEST = src/capture/capture.nmf
 
-SOURCES = $(wildcard src/*.cc)
-TEST_SOURCES = $(wildcard src/test/*.cc)
+BASE_SOURCES = $(wildcard src/*.cc)
+SOURCES = $(BASE_SOURCES) $(wildcard src/capture/*.cc)
+TEST_SOURCES = $(BASE_SOURCES) $(wildcard src/test/*.cc)
 
-OBJECTS = $(SOURCES:.cc=.o)
-TEST_OBJECTS = $(TEST_SOURCES:.cc=.o)
+OBJECTS = $(patsubst src/%.cc, build/%.o, $(SOURCES))
+TEST_OBJECTS = $(patsubst src/%.cc, build/%.o, $(TEST_SOURCES))
+
+DEPENDENCIES = $(OBJECTS:.o=.d)
+TEST_DEPENDENCIES = $(TEST_OBJECTS:.o=.d)
 
 INTERMEDIATE = build/capture.bc
 TEST_INTERMEDIATE = build/capture_suite.bc
@@ -75,14 +79,17 @@ $(FINAL_MANIFEST):
 test: $(TEST_EXECUTABLE)
 	$(PNACL_TOOLS_PATH)/sel_ldr_x86_64 $(EXEC_FLAGS) $(TEST_EXECUTABLE)
 
-$(INTERMEDIATE): src/capture/capture.cc $(OBJECTS)
+$(INTERMEDIATE): $(OBJECTS)
 	$(PNACL_CXX) $^ -o $@ -O2 $(CXXFLAGS) -L$(NACL_SDK_ROOT)/lib/pnacl/Release $(LDFLAGS)
 
-$(TEST_INTERMEDIATE): $(OBJECTS) $(TEST_OBJECTS)
+$(TEST_INTERMEDIATE): $(TEST_OBJECTS)
 	$(PNACL_CXX) $^ -o $@ -O2 $(CXXFLAGS) -L$(NACL_SDK_ROOT)/lib/pnacl/Release $(TEST_LDFLAGS)
 
-%.o: %.cc
-	$(PNACL_CXX) -o $@ $(CXXFLAGS) -c $<
+-include $(DEPENDENCIES)
+-include $(TEST_DEPENDENCIES)
+
+build/%.o: src/%.cc
+	$(PNACL_CXX) -MMD -MP -o $@ $(CXXFLAGS) -c $<
 
 %.pexe: %.bc
 	$(PNACL_FINALIZE) -o $@ $<
@@ -91,12 +98,14 @@ $(TEST_INTERMEDIATE): $(OBJECTS) $(TEST_OBJECTS)
 	$(PNACL_TRANSLATE) -o $@ -arch $(NATIVE_ARCH) $<
 
 test-clean:
+	$(RM) $(TEST_DEPENDENCIES)
 	$(RM) $(TEST_OBJECTS)
 	$(RM) $(TEST_INTERMEDIATE)
 	$(RM) $(TEST_EXECUTABLE)
 	$(RM) $(TEST_EXECUTABLE).nexe
 
 clean: test-clean
+	$(RM) $(DEPENDENCIES)
 	$(RM) $(OBJECTS)
 	$(RM) $(INTERMEDIATE)
 	$(RM) $(EXECUTABLE)

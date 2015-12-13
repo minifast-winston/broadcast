@@ -2,8 +2,8 @@
 #include "frame_advancer.h"
 
 class TestFrameAdvancerListener: public FrameObserver {
-  int32_t value_;
   bool called_;
+  int32_t value_;
 public:
   TestFrameAdvancerListener(): called_(false), value_(0) {}
   ~TestFrameAdvancerListener() {}

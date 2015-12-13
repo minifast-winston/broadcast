@@ -19,8 +19,7 @@ class Configurer {
   pp::Size encoder_size_;
   pp::VideoEncoder video_encoder_;
 public:
-  explicit Configurer() : callback_factory_(this),
-                        listeners_() {}
+  explicit Configurer() : listeners_(), callback_factory_(this) {}
   void SetEncoder(pp::VideoEncoder encoder);
   void OnConfigure(ConfigurationObserver *listener);
   void ClearListeners();

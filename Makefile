@@ -17,7 +17,7 @@ NACL_SDK_ROOT ?= $(abspath $(dir $(THIS_MAKEFILE))../nacl_sdk/pepper_46)
 
 # Project Build flags
 WARNINGS := -Wno-c++11-extensions -Wno-long-long -Wall -Wswitch-enum -pedantic -Werror
-CXXFLAGS := -pthread -std=gnu++11 $(WARNINGS)
+CXXFLAGS := -pthread -std=gnu++11 -stdlib=libc++ $(WARNINGS) -I$(NACL_SDK_ROOT)/include -Isrc
 
 #
 # Compute tool paths
@@ -35,7 +35,7 @@ PNACL_CXX := $(PNACL_TC_PATH)/bin/pnacl-clang++
 PNACL_FINALIZE := $(PNACL_TC_PATH)/bin/pnacl-finalize
 PNACL_TRANSLATE := $(PNACL_TC_PATH)/bin/pnacl-translate
 PNACL_SEL_LDR := $(PNACL_TC_PATH)/bin/pnacl-translate
-CXXFLAGS := -I$(NACL_SDK_ROOT)/include -Isrc
+
 LDFLAGS := -lppapi_cpp -lppapi
 TEST_LDFLAGS := -lppapi_simple_cpp $(LDFLAGS) -lnacl_io -lgtest
 EXEC_FLAGS := -B $(PNACL_TOOLS_PATH)/irt_core_x86_64.nexe
@@ -90,13 +90,13 @@ $(TEST_INTERMEDIATE): $(OBJECTS) $(TEST_OBJECTS)
 %.nexe: %.pexe
 	$(PNACL_TRANSLATE) -o $@ -arch $(NATIVE_ARCH) $<
 
-clean_test:
+test-clean:
 	$(RM) $(TEST_OBJECTS)
 	$(RM) $(TEST_INTERMEDIATE)
 	$(RM) $(TEST_EXECUTABLE)
 	$(RM) $(TEST_EXECUTABLE).nexe
 
-clean: clean_test
+clean: test-clean
 	$(RM) $(OBJECTS)
 	$(RM) $(INTERMEDIATE)
 	$(RM) $(EXECUTABLE)

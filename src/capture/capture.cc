@@ -24,25 +24,25 @@ class CaptureInstance : public pp::Instance,
   FrameAdvancer advancer_;
   IVFWriter ivf_writer_;
   Configurer configurer_;
-
   pp::VideoEncoder video_encoder_;
+
+  int32_t encoded_frames_;
+  pp::CompletionCallbackFactory<CaptureInstance> callback_factory_;
+
+  std::deque<uint64_t> frames_timestamps_;
   pp::MediaStreamVideoTrack video_track_;
   pp::Size frame_size_;
 
-  pp::CompletionCallbackFactory<CaptureInstance> callback_factory_;
-  std::deque<uint64_t> frames_timestamps_;
-
-  int32_t encoded_frames_;
 
 public:
   explicit CaptureInstance(PP_Instance i) : pp::Instance(i),
-                                            video_encoder_(this),
-                                            callback_factory_(this),
-                                            configurer_(),
                                             remote_(),
-                                            ivf_writer_(),
                                             advancer_(15),
-                                            encoded_frames_(0) {
+                                            ivf_writer_(),
+                                            configurer_(),
+                                            video_encoder_(this),
+                                            encoded_frames_(0),
+                                            callback_factory_(this) {
     advancer_.SetRemote(&remote_);
     advancer_.OnFrameTick(this);
     configurer_.OnConfigure(this);

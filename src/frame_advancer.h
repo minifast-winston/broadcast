@@ -18,17 +18,19 @@ class FrameAdvancer: public RemoteControlObserver {
   std::vector<FrameObserver*> listeners_;
 
 public:
-  FrameAdvancer(uint32_t fps, PPB_Core* core) : callback_factory_(this),
-                                                encoding_(false),
+  FrameAdvancer(uint32_t fps, PPB_Core* core) : encoding_(false),
                                                 paused_(true),
-                                                fps_(fps) {
+                                                fps_(fps),
+                                                callback_factory_(this),
+                                                listeners_() {
     core_ = core;
   };
 
-  FrameAdvancer(uint32_t fps): callback_factory_(this),
-                               encoding_(false),
+  FrameAdvancer(uint32_t fps): encoding_(false),
                                paused_(true),
-                               fps_(fps) {
+                               fps_(fps),
+                               callback_factory_(this),
+                               listeners_() {
     core_ = static_cast<const PPB_Core*>(
       pp::Module::Get()->GetBrowserInterface(PPB_CORE_INTERFACE));
   };

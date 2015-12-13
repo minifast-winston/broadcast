@@ -20,9 +20,6 @@
 class CaptureInstance : public pp::Instance,
                         public FrameObserver,
                         public ConfigurationObserver {
-  bool track_configured_;
-  bool encoder_initialized_;
-
   RemoteControl remote_;
   FrameAdvancer advancer_;
   IVFWriter ivf_writer_;
@@ -41,8 +38,6 @@ public:
   explicit CaptureInstance(PP_Instance i) : pp::Instance(i),
                                             video_encoder_(this),
                                             callback_factory_(this),
-                                            track_configured_(false),
-                                            encoder_initialized_(false),
                                             configurer_(),
                                             remote_(),
                                             ivf_writer_(),

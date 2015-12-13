@@ -1,3 +1,8 @@
+#ifndef BROADCAST_TEST_HELPERS_TIMECOP_H_
+#define BROADCAST_TEST_HELPERS_TIMECOP_H_
+
+#include "ppapi/c/pp_time.h"
+
 class Timecop {
   static Timecop *instance_;
   PP_Time now_;
@@ -18,4 +23,5 @@ public:
   void Delta(PP_Time interval) { now_ += interval; }
   PP_Time Get() { return now_; }
 };
-Timecop *Timecop::instance_ = 0;
+
+#endif

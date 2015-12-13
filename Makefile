@@ -34,7 +34,7 @@ PNACL_CXX := $(PNACL_TC_PATH)/bin/pnacl-clang++
 PNACL_FINALIZE := $(PNACL_TC_PATH)/bin/pnacl-finalize
 PNACL_TRANSLATE := $(PNACL_TC_PATH)/bin/pnacl-translate
 PNACL_SEL_LDR := $(PNACL_TC_PATH)/bin/pnacl-translate
-CXXFLAGS := -I$(NACL_SDK_ROOT)/include
+CXXFLAGS := -I$(NACL_SDK_ROOT)/include -Isrc
 LDFLAGS := -lppapi_cpp -lppapi
 TEST_LDFLAGS := -lppapi_simple_cpp $(LDFLAGS) -lnacl_io -lgtest
 
@@ -46,48 +46,52 @@ export CYGWIN
 
 
 # Declare the ALL target first, to make the 'all' target the default build
-all: $(abspath $(dir $(THIS_MAKEFILE))/dist/capture.pexe) $(abspath $(dir $(THIS_MAKEFILE))/dist/capture.nmf)
-test: all $(abspath $(dir $(THIS_MAKEFILE))/build/capture_suite.pexe)
+all: dist/capture.pexe dist/capture.nmf
+test: all build/capture_suite.pexe
 
 test_run: test
 	$(PNACL_TRANSLATE) -arch x86-64 \
-		$(abspath $(dir $(THIS_MAKEFILE))/build/capture_suite.pexe) \
-		-o $(abspath $(dir $(THIS_MAKEFILE))/build/capture_suite.nexe)
+		build/capture_suite.pexe \
+		-o build/capture_suite.nexe
 	$(PNACL_TOOLS_PATH)/sel_ldr_x86_64 \
 		-B $(PNACL_TOOLS_PATH)/irt_core_x86_64.nexe \
-		$(abspath $(dir $(THIS_MAKEFILE))/build/capture_suite.nexe)
+		build/capture_suite.nexe
 
 clean_test:
-	$(RM) $(abspath $(dir $(THIS_MAKEFILE))/build/capture_suite.nexe)
-	$(RM) $(abspath $(dir $(THIS_MAKEFILE))/build/capture_suite.pexe)
-	$(RM) $(abspath $(dir $(THIS_MAKEFILE))/build/capture_suite.bc)
+	$(RM) build/capture_suite.nexe
+	$(RM) build/capture_suite.pexe
+	$(RM) build/capture_suite.bc
 
 clean: clean_test
-	$(RM) $(abspath $(dir $(THIS_MAKEFILE))/dist/capture.pexe)
-	$(RM) $(abspath $(dir $(THIS_MAKEFILE))/dist/capture.nmf)
-	$(RM) $(abspath $(dir $(THIS_MAKEFILE))/build/capture.bc)
+	$(RM) dist/capture.pexe
+	$(RM) dist/capture.nmf
+	$(RM) build/capture.bc
 
-$(abspath $(dir $(THIS_MAKEFILE))/build/capture.bc): $(abspath $(dir $(THIS_MAKEFILE))/src/capture.cc)
+build/capture.bc: src/capture.cc
 	$(PNACL_CXX) -o $@ \
-		$(abspath $(dir $(THIS_MAKEFILE))/src/ivf_writer.cc) \
-		$(abspath $(dir $(THIS_MAKEFILE))/src/remote_control.cc) \
-		$(abspath $(dir $(THIS_MAKEFILE))/src/frame_advancer.cc) \
-		$(abspath $(dir $(THIS_MAKEFILE))/src/configurer.cc) \
+		src/ivf_writer.cc \
+		src/remote_control.cc \
+		src/frame_advancer.cc \
+		src/configurer.cc \
 		$< -O2 $(CXXFLAGS) -L$(NACL_SDK_ROOT)/lib/pnacl/Release $(LDFLAGS)
 
-$(abspath $(dir $(THIS_MAKEFILE))/build/capture_suite.bc): $(abspath $(dir $(THIS_MAKEFILE))/src/capture_suite.cc)
+build/capture_suite.bc: src/test/capture_suite.cc
 	$(PNACL_CXX) -o $@ \
-		$(abspath $(dir $(THIS_MAKEFILE))/src/ivf_writer.cc) \
-		$(abspath $(dir $(THIS_MAKEFILE))/src/remote_control.cc) \
-		$(abspath $(dir $(THIS_MAKEFILE))/src/frame_advancer.cc) \
-		$(abspath $(dir $(THIS_MAKEFILE))/src/configurer.cc) \
+		src/ivf_writer.cc \
+		src/remote_control.cc \
+		src/frame_advancer.cc \
+		src/configurer.cc \
+		src/test/timecop_test.cc \
+		src/test/ivf_writer_test.cc \
+    src/test/remote_control_test.cc \
+		src/test/frame_advancer_test.cc \
 		$< -Os $(CXXFLAGS) -L$(NACL_SDK_ROOT)/lib/pnacl/Release $(TEST_LDFLAGS)
 
-$(abspath $(dir $(THIS_MAKEFILE))/dist/capture.pexe): $(abspath $(dir $(THIS_MAKEFILE))/build/capture.bc)
+dist/capture.pexe: build/capture.bc
 	$(PNACL_FINALIZE) -o $@ $<
 
-$(abspath $(dir $(THIS_MAKEFILE))/build/capture_suite.pexe): $(abspath $(dir $(THIS_MAKEFILE))/build/capture_suite.bc)
+build/capture_suite.pexe: build/capture_suite.bc
 	$(PNACL_FINALIZE) -o $@ $<
 
-$(abspath $(dir $(THIS_MAKEFILE))/dist/capture.nmf):
-	$(CP) $(abspath $(dir $(THIS_MAKEFILE))/src/capture.nmf) $@
+dist/capture.nmf:
+	$(CP) src/capture.nmf $@

@@ -24,6 +24,7 @@ CXXFLAGS := -pthread -std=gnu++11 $(WARNINGS)
 #
 GETOS := python $(NACL_SDK_ROOT)/tools/getos.py
 OSHELPERS = python $(NACL_SDK_ROOT)/tools/oshelpers.py
+NATIVE_ARCH = x86-64
 OSNAME := $(shell $(GETOS))
 RM := $(OSHELPERS) rm
 CP := $(OSHELPERS) cp
@@ -37,6 +38,19 @@ PNACL_SEL_LDR := $(PNACL_TC_PATH)/bin/pnacl-translate
 CXXFLAGS := -I$(NACL_SDK_ROOT)/include -Isrc
 LDFLAGS := -lppapi_cpp -lppapi
 TEST_LDFLAGS := -lppapi_simple_cpp $(LDFLAGS) -lnacl_io -lgtest
+EXEC_FLAGS := -B $(PNACL_TOOLS_PATH)/irt_core_x86_64.nexe
+
+SOURCES=$(wildcard src/*.cc)
+TEST_SOURCES=$(wildcard src/test/*.cc)
+
+OBJECTS=$(SOURCES:.cc=.o)
+TEST_OBJECTS=$(TEST_SOURCES:.cc=.o)
+
+INTERMEDIATE=build/capture.bc
+TEST_INTERMEDIATE=build/capture_suite.bc
+
+EXECUTABLE=$(INTERMEDIATE:.bc=.pexe)
+TEST_EXECUTABLE=$(TEST_INTERMEDIATE:.bc=.nexe)
 
 #
 # Disable DOS PATH warning when using Cygwin based tools Windows
@@ -44,54 +58,39 @@ TEST_LDFLAGS := -lppapi_simple_cpp $(LDFLAGS) -lnacl_io -lgtest
 CYGWIN ?= nodosfilewarning
 export CYGWIN
 
+all: $(EXECUTABLE) dist/capture.nmf
+	$(CP) $< $(patsubst build/%, dist/%, $<)
 
-# Declare the ALL target first, to make the 'all' target the default build
-all: dist/capture.pexe dist/capture.nmf
-test: all build/capture_suite.pexe
+test: $(TEST_EXECUTABLE)
+	$(PNACL_TOOLS_PATH)/sel_ldr_x86_64 $(EXEC_FLAGS) $(TEST_EXECUTABLE)
 
-test_run: test
-	$(PNACL_TRANSLATE) -arch x86-64 \
-		build/capture_suite.pexe \
-		-o build/capture_suite.nexe
-	$(PNACL_TOOLS_PATH)/sel_ldr_x86_64 \
-		-B $(PNACL_TOOLS_PATH)/irt_core_x86_64.nexe \
-		build/capture_suite.nexe
+$(INTERMEDIATE): src/capture/capture.cc $(OBJECTS)
+	$(PNACL_CXX) $^ -o $@ -O2 $(CXXFLAGS) -L$(NACL_SDK_ROOT)/lib/pnacl/Release $(LDFLAGS)
 
-clean_test:
-	$(RM) build/capture_suite.nexe
-	$(RM) build/capture_suite.pexe
-	$(RM) build/capture_suite.bc
+$(TEST_INTERMEDIATE): $(OBJECTS) $(TEST_OBJECTS)
+	$(PNACL_CXX) $^ -o $@ -O2 $(CXXFLAGS) -L$(NACL_SDK_ROOT)/lib/pnacl/Release $(TEST_LDFLAGS)
 
-clean: clean_test
-	$(RM) dist/capture.pexe
-	$(RM) dist/capture.nmf
-	$(RM) build/capture.bc
+%.o: %.cc
+	$(PNACL_CXX) -o $@ $(CXXFLAGS) -c $<
 
-build/capture.bc: src/capture.cc
-	$(PNACL_CXX) -o $@ \
-		src/ivf_writer.cc \
-		src/remote_control.cc \
-		src/frame_advancer.cc \
-		src/configurer.cc \
-		$< -O2 $(CXXFLAGS) -L$(NACL_SDK_ROOT)/lib/pnacl/Release $(LDFLAGS)
-
-build/capture_suite.bc: src/test/capture_suite.cc
-	$(PNACL_CXX) -o $@ \
-		src/ivf_writer.cc \
-		src/remote_control.cc \
-		src/frame_advancer.cc \
-		src/configurer.cc \
-		src/test/timecop_test.cc \
-		src/test/ivf_writer_test.cc \
-    src/test/remote_control_test.cc \
-		src/test/frame_advancer_test.cc \
-		$< -Os $(CXXFLAGS) -L$(NACL_SDK_ROOT)/lib/pnacl/Release $(TEST_LDFLAGS)
-
-dist/capture.pexe: build/capture.bc
+%.pexe: %.bc
 	$(PNACL_FINALIZE) -o $@ $<
 
-build/capture_suite.pexe: build/capture_suite.bc
-	$(PNACL_FINALIZE) -o $@ $<
+%.nexe: %.pexe
+	$(PNACL_TRANSLATE) -o $@ -arch $(NATIVE_ARCH) $<
 
 dist/capture.nmf:
 	$(CP) src/capture.nmf $@
+
+clean_test:
+	$(RM) $(TEST_OBJECTS)
+	$(RM) $(TEST_INTERMEDIATE)
+	$(RM) $(TEST_EXECUTABLE)
+	$(RM) $(TEST_EXECUTABLE).nexe
+
+clean: clean_test
+	$(RM) $(OBJECTS)
+	$(RM) $(INTERMEDIATE)
+	$(RM) $(EXECUTABLE)
+	$(RM) dist/capture.nmf
+

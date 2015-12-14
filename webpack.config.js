@@ -1,7 +1,8 @@
 var path = require('path');
 
 module.exports = {
-  module: {
+  module:{
+    noParse: [/aws-sdk/],
     loaders: [
       {
         test: /\.js?$/,

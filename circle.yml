@@ -1,3 +1,8 @@
 machine:
   node:
     version: 5.1.0
+
+test:
+  pre:
+    - echo "const COGNITO_IDENTITY_POOL = '$COGNITO_IDENTITY_POOL'" >> app/env.js
+    - echo "const BROADCAST_BUCKET = '$BROADCAST_BUCKET'" >> app/env.js

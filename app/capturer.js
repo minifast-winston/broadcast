@@ -1,6 +1,7 @@
 import Cursor from './cursor';
 import Atom from './atom';
 import StreamSelector from './stream_selector';
+import Uploader from './uploader';
 
 class Capturer {
   constructor(atom, capture, internalAtom = new Atom({video: null})) {
@@ -10,19 +11,7 @@ class Capturer {
     this.$requested = new Cursor(atom).select('requested');
     this.$size = new Cursor(atom).select('size');
     this.capture = capture;
-    this.buffer = new ArrayBuffer(0);
-  }
-
-  push(buffer) {
-    let tmp = new Uint8Array(this.buffer.byteLength + buffer.byteLength);
-    tmp.set(new Uint8Array(this.buffer), 0);
-    tmp.set(new Uint8Array(buffer), this.buffer.byteLength);
-    this.reset(tmp.buffer);
-  }
-
-  reset(buffer) {
-    this.buffer = buffer;
-    this.$size.set(this.buffer.byteLength);
+    this.uploader = new Uploader(this.$size);
   }
 
   listen() {
@@ -34,7 +23,7 @@ class Capturer {
 
   onCaptureMessage({data}) {
     if (data.name == 'frame') {
-      this.push(data.data);
+      this.uploader.push(data.data);
       this.$frames.push(data.timestamp)
     }
   }
@@ -57,7 +46,9 @@ class Capturer {
     this.$capturing.set(false);
     this.$video.set(null);
     this.$frames.set([]);
-    this.reset(new ArrayBuffer(0));
+    return this.uploader.upload()
+                        .then(this.uploader.reset.bind(this.uploader))
+                        .catch(error => console.error(error));
   }
 
   onVideoStream(stream, oldStream) {

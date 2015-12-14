@@ -5,13 +5,17 @@ import StreamSelector from '../../app/stream_selector';
 import Atom from '../../app/atom';
 
 describe('Capturer', function() {
-  var capturer, atom, internalAtom, captureDom;
+  var capturer, atom, internalAtom, captureDom, fakeS3;
 
   beforeEach(function() {
     jsdomify.create('<!DOCTYPE html><html><head></head><body><div id="container"></div></body></html>');
     atom = new Atom({requested: true, capturing: true, frames: []});
     internalAtom = new Atom({video: null});
     captureDom = {postMessage: jasmine.createSpy('postMessage')};
+    fakeS3 = {upload: jasmine.createSpy('upload')};
+    var s3Spy = jasmine.createSpy('s3').and.returnValue(fakeS3);
+    var credentialsSpy = jasmine.createSpy('CognitoIdentityCredentials');
+    global.window.AWS = {CognitoIdentityCredentials: credentialsSpy, S3: s3Spy};
     capturer = new Capturer(atom, captureDom, internalAtom);
   });
 
@@ -55,6 +59,7 @@ describe('Capturer', function() {
       atom = new Atom({requested: true, capturing: true, frames: [1], size: 123});
       internalAtom = new Atom({video: 'action_films'});
       capturer = new Capturer(atom, captureDom, internalAtom);
+      fakeS3.upload.and.callFake((params, callback) => callback());
     });
 
     it('stops capturing', function() {
@@ -72,9 +77,17 @@ describe('Capturer', function() {
       expect(atom.deref().frames).toEqual([]);
     });
 
-    it('resets the size', function() {
+    it('uploads the data', function() {
       capturer.onEnd();
-      expect(atom.deref().size).toEqual(0);
+      expect(fakeS3.upload).toHaveBeenCalled();
+    });
+
+    it('resets the size', function(done) {
+      capturer.onEnd();
+      setTimeout(() => {
+        expect(atom.deref().size).toEqual(0);
+        done();
+      }, 0);
     });
   });
 

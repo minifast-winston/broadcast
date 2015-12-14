@@ -9,7 +9,7 @@
 
 class ConfigurationObserver {
 public:
-  virtual void OnConfigure(pp::MediaStreamVideoTrack track, pp::Size size) = 0;
+  virtual void OnConfigure(pp::Size size) = 0;
 };
 
 class Configurer {
@@ -17,15 +17,15 @@ class Configurer {
   pp::CompletionCallbackFactory<Configurer> callback_factory_;
 
   pp::Size encoder_size_;
-  pp::VideoEncoder video_encoder_;
+  pp::VideoEncoder *video_encoder_;
 public:
   explicit Configurer() : listeners_(), callback_factory_(this) {}
-  void SetEncoder(pp::VideoEncoder encoder);
+  void SetEncoder(pp::VideoEncoder *encoder);
   void OnConfigure(ConfigurationObserver *listener);
   void ClearListeners();
-  void Configure(pp::Resource track, uint32_t width, uint32_t height);
-  void OnTrackConfigured(int32_t result, pp::Size frame_size, pp::MediaStreamVideoTrack video_track);
-  void OnEncoderInitialized(int32_t result, pp::Size frame_size, pp::MediaStreamVideoTrack video_track);
+  void Configure(pp::MediaStreamVideoTrack *track, uint32_t width, uint32_t height);
+  void OnTrackConfigured(int32_t result, pp::Size frame_size);
+  void OnEncoderInitialized(int32_t result, pp::Size frame_size);
 };
 
 #endif

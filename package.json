@@ -28,6 +28,7 @@
     "webpack-dev-server": "1.14.0"
   },
   "dependencies": {
+    "aws-sdk": "2.2.22",
     "baobab": "^2.1.1",
     "baobab-react": "^1.0.0",
     "deep-equal": "^1.0.1",

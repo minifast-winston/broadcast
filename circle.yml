@@ -4,9 +4,11 @@ machine:
 
 dependencies:
   post:
-    - curl -o tmp/nacl_sdk.zip https://storage.googleapis.com/nativeclient-mirror/nacl/nacl_sdk/nacl_sdk.zip
-    - unzip tmp/nacl_sdk.zip
+    - test -d nacl_sdk || curl -o tmp/nacl_sdk.zip https://storage.googleapis.com/nativeclient-mirror/nacl/nacl_sdk/nacl_sdk.zip
+    - test -d nacl_sdk || unzip tmp/nacl_sdk.zip
     - nacl_sdk/naclsdk install
+  cache_directories:
+    - nacl_sdk
 
 test:
   pre:

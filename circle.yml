@@ -2,7 +2,15 @@ machine:
   node:
     version: 5.1.0
 
+dependencies:
+  post:
+    - curl -o tmp/nacl_sdk.zip https://storage.googleapis.com/nativeclient-mirror/nacl/nacl_sdk/nacl_sdk.zip
+    - unzip tmp/nacl_sdk.zip
+    - nacl_sdk/naclsdk install
+
 test:
   pre:
     - echo "export const COGNITO_IDENTITY_POOL = '$COGNITO_IDENTITY_POOL'" >> app/env.js
     - echo "export const BROADCAST_BUCKET = '$BROADCAST_BUCKET'" >> app/env.js
+  post:
+    - make test

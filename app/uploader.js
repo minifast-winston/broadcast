@@ -1,4 +1,4 @@
-import './env';
+import {BROADCAST_BUCKET, COGNITO_IDENTITY_POOL} from './env';
 import 'aws-sdk/dist/aws-sdk';
 
 class Uploader {

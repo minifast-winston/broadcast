@@ -25,12 +25,8 @@ const BackgroundContext = React.createClass({
   onMessage: function({source, command}) {
     if (this.props.source === source) { return; }
     let atom = new Atom(this.state);
-    atom.onReplace(this.onAtomReplace);
+    atom.onReplace(state => this.setState(state));
     atom.update(command);
-  },
-
-  onAtomReplace: function(state) {
-    this.setState(state);
   },
 
   onAtomCommand: function(command) {
@@ -41,7 +37,7 @@ const BackgroundContext = React.createClass({
     let atom = new Atom(this.state);
     let cursor = new Cursor(atom);
     atom.onCommand(this.onAtomCommand);
-    atom.onReplace(this.onAtomReplace);
+    atom.onReplace(state => this.setState(state));
     return (<div>
       {React.Children.map(this.props.children, child => React.cloneElement(child, {cursor}))}
     </div>);

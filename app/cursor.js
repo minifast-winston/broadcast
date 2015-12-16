@@ -33,10 +33,6 @@ class Cursor {
     return new Cursor(this.atom, this.path.concat(keys));
   }
 
-  apply(transducer) {
-    this.update({$apply: transducer});
-  }
-
   set(value) {
     this.update({$set: value});
   }

@@ -33,13 +33,6 @@ describe('Cursor', function() {
     });
   });
 
-  describe('#apply', function() {
-    it('should apply the function to the data in the context of the cursor', function() {
-      cursor.select('taco').apply(tacoType => tacoType + 1);
-      expect(cursor.select('taco').get()).toEqual("chicken1");
-    });
-  });
-
   describe('#set', function() {
     it('sets the data at the context of the cursor', function() {
       cursor.select('taco').set('fish');

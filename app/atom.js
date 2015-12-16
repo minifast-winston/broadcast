@@ -1,8 +1,18 @@
+import updateReact from 'react-addons-update';
+
 class Atom {
-  constructor(data, listener) {
+  constructor(data) {
     this.data = data;
-    this.listeners = [];
-    this.listen(listener);
+    this.commandListeners = [];
+    this.replaceListeners = [];
+  }
+
+  onCommand(listener) {
+    if (listener) this.commandListeners.push(listener);
+  }
+
+  onReplace(listener) {
+    if (listener) this.replaceListeners.push(listener);
   }
 
   deref() {
@@ -12,11 +22,13 @@ class Atom {
   replace(newData) {
     var oldData = this.data;
     this.data = newData;
-    this.listeners.forEach(listener => listener(newData, oldData));
+    this.replaceListeners.forEach(listener => listener(newData, oldData));
   }
 
-  listen(listener) {
-    if (listener) this.listeners.push(listener);
+  update(command) {
+    let newData = updateReact(this.data, command);
+    this.commandListeners.forEach(listener => listener(command));
+    this.replace(newData);
   }
 }
 

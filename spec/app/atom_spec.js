@@ -6,7 +6,7 @@ describe('Atom', function() {
   beforeEach(function() {
     data = {};
     listener = jasmine.createSpy("listener");
-    atom = new Atom(data, listener);
+    atom = new Atom(data);
   });
 
   describe('#deref', function() {
@@ -27,33 +27,29 @@ describe('Atom', function() {
       expect(atom.deref()).toBe(newData)
     });
 
-    describe('when the atom is created with a listener', function() {
+    describe('when the atom is fed a listener', function() {
+      beforeEach(function() {
+        atom.onReplace(listener);
+      });
+
       it('calls the listener', function(){
         atom.replace(newData);
         expect(listener).toHaveBeenCalledWith(newData, data);
       });
     });
+  });
 
-    describe('when the atom is created without a listener', function() {
-      beforeEach(function() {
-        atom = new Atom(data);
-      });
+  describe('#update', function() {
+    it('calls the callback with the command', function() {
+      atom.onCommand(listener)
+      atom.update({taco: {$set: 'pork'}});
+      expect(listener).toHaveBeenCalledWith({taco: {$set: 'pork'}});
+    });
 
-      it('has no way of calling the listener', function(){
-        atom.replace(newData);
-        expect(listener).not.toHaveBeenCalled();
-      });
-
-      describe('when the atom is fed a listener', function() {
-        beforeEach(function() {
-          atom.listen(listener);
-        });
-
-        it('calls the listener', function(){
-          atom.replace(newData);
-          expect(listener).toHaveBeenCalledWith(newData, data);
-        });
-      });
+    it('calls the callback with the update', function() {
+      atom.onReplace(listener)
+      atom.update({taco: {$set: 'pork'}});
+      expect(listener).toHaveBeenCalledWith({taco: 'pork'}, {});
     });
   });
 });

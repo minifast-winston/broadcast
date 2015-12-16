@@ -9,7 +9,7 @@ describe('Cursor', function() {
     callback = jasmine.createSpy("callback");
     data = {taco: "chicken", beans: ['black', 'pinto']};
     deepFreeze(data);
-    atom = new Atom(data, callback);
+    atom = new Atom(data);
     cursor = new Cursor(atom);
   });
 
@@ -68,21 +68,15 @@ describe('Cursor', function() {
   });
 
   describe('#update', function() {
-    it('calls the callback', function() {
+    it('updates the atom', function() {
       cursor.update({taco: {$set: 'pork'}});
-      expect(callback).toHaveBeenCalledWith(
-        {taco: "pork", beans: ['black', 'pinto']},
-        data
-      );
+      expect(atom.deref()).toEqual({taco: "pork", beans: ['black', 'pinto']});
     });
 
     describe('on a selected cursor', function() {
       it('calls the callback', function() {
         cursor.select('beans').update({$push: ['refried']});
-        expect(callback).toHaveBeenCalledWith(
-          {taco: "chicken", beans: ['black', 'pinto', 'refried']},
-          data
-        );
+        expect(atom.deref()).toEqual({taco: "chicken", beans: ['black', 'pinto', 'refried']});
       });
     });
   });

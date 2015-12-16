@@ -1,4 +1,3 @@
-import updateReact from 'react-addons-update';
 
 class Watch {
   constructor(path, listener) {
@@ -23,7 +22,7 @@ class Cursor {
 
   listen(listener) {
     let watch = new Watch(this.path, listener);
-    this.atom.listen(watch.onData.bind(watch));
+    this.atom.onReplace(watch.onData.bind(watch));
   }
 
   get(...keys) {
@@ -49,8 +48,7 @@ class Cursor {
 
   update(command) {
     let nestedCommand = this.path.reduceRight((memo, key) => ({[key]: memo}), command);
-    let newData = updateReact(this.atom.deref(), nestedCommand);
-    this.atom.replace(newData);
+    this.atom.update(nestedCommand);
   }
 }
 

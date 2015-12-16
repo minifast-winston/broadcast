@@ -43,7 +43,7 @@ describe('BackgroundContext', function() {
 
     describe('when the atom is changed remotely', function(){
       it('re-renders with the new data', function(){
-        chrome.runtime.sendMessage({source: 'jasmine', state: {tacos: 'chicharrones'}});
+        chrome.runtime.sendMessage({source: 'jasmine', command: {tacos: {$set: 'chicharrones'}}});
         expect(document.body.innerHTML).toContain('chicharrones');
       });
     });

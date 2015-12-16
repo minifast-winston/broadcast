@@ -2,25 +2,24 @@ import Cursor from 'cursor';
 import Atom from 'atom';
 import Capturer from 'capturer';
 
-class Background {
-  constructor(atom, capture) {
+class ChromeListener {
+  constructor(atom) {
     this.atom = atom;
     this.source = `context.${Date.now()}`;
-    this.cursor = new Cursor(this.atom);
   }
 
   listen() {
-    this.atom.listen(this.onAtomChange.bind(this));
+    this.atom.onCommand(this.onAtomCommand.bind(this));
     chrome.runtime.onMessage.addListener(this.onChromeMessage.bind(this));
   }
 
-  onAtomChange(state, previous) {
-    chrome.runtime.sendMessage({source: this.source, state});
+  onAtomCommand(command) {
+    chrome.runtime.sendMessage({source: this.source, command});
   }
 
-  onChromeMessage({source, state}) {
+  onChromeMessage({source, command}) {
     if (this.source == source) { return; }
-    this.atom.replace(state);
+    this.atom.update(command);
   }
 }
 
@@ -31,5 +30,5 @@ window.atom = new Atom({
   size: 0
 });
 
-new Background(window.atom).listen();
+new ChromeListener(window.atom).listen();
 new Capturer(window.atom, document.getElementById('capture')).listen();

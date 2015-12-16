@@ -1,22 +1,18 @@
-import jsdomify from 'jsdomify';
-
 import Capturer from '../../app/capturer';
+import Uploader from '../../app/uploader';
 import StreamSelector from '../../app/stream_selector';
 import Atom from '../../app/atom';
 
 describe('Capturer', function() {
-  var capturer, atom, internalAtom, captureDom, fakeS3;
+  var capturer, atom, internalAtom, captureDom, uploader, bucket;
 
   beforeEach(function() {
-    jsdomify.create('<!DOCTYPE html><html><head></head><body><div id="container"></div></body></html>');
-    atom = new Atom({requested: true, capturing: true, frames: []});
+    atom = new Atom({requested: true, capturing: true, frames: [], size: 0});
     internalAtom = new Atom({video: null});
     captureDom = {postMessage: jasmine.createSpy('postMessage')};
-    fakeS3 = {upload: jasmine.createSpy('upload')};
-    var s3Spy = jasmine.createSpy('s3').and.returnValue(fakeS3);
-    var credentialsSpy = jasmine.createSpy('CognitoIdentityCredentials');
-    global.window.AWS = {CognitoIdentityCredentials: credentialsSpy, S3: s3Spy};
-    capturer = new Capturer(atom, captureDom, internalAtom);
+    bucket = {upload: jasmine.createSpy('upload')};
+    uploader = new Uploader(atom, bucket);
+    capturer = new Capturer(atom, captureDom, internalAtom, uploader);
   });
 
   describe('#onResume', function() {
@@ -57,9 +53,8 @@ describe('Capturer', function() {
   describe('#onEnd', function() {
     beforeEach(function() {
       atom = new Atom({requested: true, capturing: true, frames: [1], size: 123});
-      internalAtom = new Atom({video: 'action_films'});
-      capturer = new Capturer(atom, captureDom, internalAtom);
-      fakeS3.upload.and.callFake((params, callback) => callback());
+      internalAtom = new Atom({video: 'bollywood_action_films'});
+      capturer = new Capturer(atom, captureDom, internalAtom, uploader);
     });
 
     it('stops capturing', function() {
@@ -78,14 +73,17 @@ describe('Capturer', function() {
     });
 
     it('uploads the data', function() {
+      spyOn(uploader, 'upload').and.callThrough();
       capturer.onEnd();
-      expect(fakeS3.upload).toHaveBeenCalled();
+      expect(uploader.upload).toHaveBeenCalled();
     });
 
     it('resets the size', function(done) {
+      spyOn(uploader, 'upload').and.returnValue(Promise.resolve('uploaded'));
+      spyOn(uploader, 'reset').and.callThrough();
       capturer.onEnd();
       setTimeout(() => {
-        expect(atom.deref().size).toEqual(0);
+        expect(uploader.reset).toHaveBeenCalled();
         done();
       }, 0);
     });

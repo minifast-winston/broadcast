@@ -4,14 +4,13 @@ import StreamSelector from './stream_selector';
 import Uploader from './uploader';
 
 class Capturer {
-  constructor(atom, capture, internalAtom = new Atom({video: null})) {
+  constructor(atom, capture, internalAtom = new Atom({video: null}), uploader = new Uploader(atom)) {
     this.$video = new Cursor(internalAtom).select('video');
     this.$frames = new Cursor(atom).select('frames');
     this.$capturing = new Cursor(atom).select('capturing');
     this.$requested = new Cursor(atom).select('requested');
-    this.$size = new Cursor(atom).select('size');
     this.capture = capture;
-    this.uploader = new Uploader(this.$size);
+    this.uploader = uploader;
   }
 
   listen() {
@@ -48,7 +47,7 @@ class Capturer {
     this.$frames.set([]);
     return this.uploader.upload()
                         .then(this.uploader.reset.bind(this.uploader))
-                        .catch(error => console.error(error));
+                        .catch(error => console.error('error uploading:', error));
   }
 
   onVideoStream(stream, oldStream) {

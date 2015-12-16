@@ -25,6 +25,7 @@ const Counter = ({cursor}) => {
       frames = $frames.get() || [],
       frameCount = frames.length,
       fps = _(frames).takeRight(100).chunk(2).map(pair => pair[1] - pair[0]).sum() / 50;
+  console.log(frames)
   return (<div>
     Frame: {frameCount}<br/>
     FPS: {Math.floor(fps * 1000)}

@@ -1,7 +1,3 @@
-# Copyright (c) 2013 The Native Client Authors. All rights reserved.
-# Use of this source code is governed by a BSD-style license that can be
-# found in the LICENSE file.
-
 #
 # GNU Make based build file.  For details on GNU Make see:
 # http://www.gnu.org/software/make/manual/make.html
@@ -10,14 +6,9 @@
 #
 # Get pepper directory for toolchain and includes.
 #
-# If NACL_SDK_ROOT is not set, then assume it can be found three directories up.
-#
 THIS_MAKEFILE := $(abspath $(lastword $(MAKEFILE_LIST)))
-NACL_SDK_ROOT ?= $(abspath $(dir $(THIS_MAKEFILE))nacl_sdk/pepper_46)
-
-# Project Build flags
-WARNINGS := -Wno-c++11-extensions -Wno-long-long -Wall -Wswitch-enum -pedantic -Werror
-CXXFLAGS := -pthread -std=gnu++11 -stdlib=libc++ $(WARNINGS) -I$(NACL_SDK_ROOT)/include -Isrc
+NACL_SDK_VERSION ?= pepper_47
+NACL_SDK_ROOT ?= $(abspath $(dir $(THIS_MAKEFILE))nacl_sdk/$(NACL_SDK_VERSION))
 
 #
 # Compute tool paths
@@ -36,10 +27,16 @@ PNACL_FINALIZE := $(PNACL_TC_PATH)/bin/pnacl-finalize
 PNACL_TRANSLATE := $(PNACL_TC_PATH)/bin/pnacl-translate
 PNACL_SEL_LDR := $(PNACL_TC_PATH)/bin/pnacl-translate
 
+# Project Build flags
+WARNINGS := -Wno-c++11-extensions -Wno-long-long -Wall -Wswitch-enum -pedantic -Werror
+CXXFLAGS := -pthread -std=gnu++11 -stdlib=libc++ $(WARNINGS) -I$(NACL_SDK_ROOT)/include -Isrc
 LDFLAGS := -lppapi_cpp -lppapi
 TEST_LDFLAGS := -lppapi_simple_cpp $(LDFLAGS) -lnacl_io -lgtest
 EXEC_FLAGS := -B $(PNACL_TOOLS_PATH)/irt_core_x86_64.nexe
 
+#
+# Dependency paths
+#
 MANIFEST = src/capture/capture.nmf
 
 BASE_SOURCES = $(wildcard src/*.cc)
@@ -68,7 +65,17 @@ CYGWIN ?= nodosfilewarning
 export CYGWIN
 
 .PHONY: all
-all: $(FINAL_EXECUTABLE) $(FINAL_MANIFEST)
+all: dependencies $(FINAL_EXECUTABLE) $(FINAL_MANIFEST)
+dependencies: nacl_sdk/$(NACL_SDK_VERSION)
+
+tmp/nacl_sdk.zip:
+	curl -o $@ https://storage.googleapis.com/nativeclient-mirror/nacl/nacl_sdk/nacl_sdk.zip
+
+nacl_sdk: tmp/nacl_sdk.zip
+	unzip $<
+
+nacl_sdk/$(NACL_SDK_VERSION): nacl_sdk
+	nacl_sdk/naclsdk install $(NACL_SDK_VERSION)
 
 $(FINAL_EXECUTABLE): $(EXECUTABLE)
 	$(CP) $< $@

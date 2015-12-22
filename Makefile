@@ -105,16 +105,16 @@ build/%.o: src/%.cc
 	$(PNACL_TRANSLATE) -o $@ -arch $(NATIVE_ARCH) $<
 
 test-clean:
-	$(RM) $(TEST_DEPENDENCIES)
-	$(RM) $(TEST_OBJECTS)
-	$(RM) $(TEST_INTERMEDIATE)
-	$(RM) $(TEST_EXECUTABLE)
-	$(RM) $(TEST_EXECUTABLE).nexe
+	$(RM) -f $(TEST_DEPENDENCIES)
+	$(RM) -f $(TEST_OBJECTS)
+	$(RM) -f $(TEST_INTERMEDIATE)
+	$(RM) -f $(TEST_EXECUTABLE)
+	$(RM) -f $(TEST_EXECUTABLE).nexe
 
 clean: test-clean
-	$(RM) $(DEPENDENCIES)
-	$(RM) $(OBJECTS)
-	$(RM) $(INTERMEDIATE)
-	$(RM) $(EXECUTABLE)
-	$(RM) $(FINAL_EXECUTABLE)
-	$(RM) $(FINAL_MANIFEST)
+	$(RM) -f $(DEPENDENCIES)
+	$(RM) -f $(OBJECTS)
+	$(RM) -f $(INTERMEDIATE)
+	$(RM) -f $(EXECUTABLE)
+	$(RM) -f $(FINAL_EXECUTABLE)
+	$(RM) -f $(FINAL_MANIFEST)
